@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Greystone
+Comment=Beginner friendly Minecraft Server Manager
+Exec=greystone.launcher
+Icon=${SNAP}/meta/gui/icon.png
+Terminal=false
+Type=Application
+Categories=Game;Utility;
