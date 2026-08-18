@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-strip is-shallow">
+    <div class="row">
+        <h1>Welcome to Greystone!</h1>
+        <p class="p-heading--4">The users yearn for the mines...</p>
+        <hr />
+        
+        <!-- LEFT COLUMN -->
+        <div class="col-5">
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="p-notification--{{ category }}">
+                    <div class="p-notification__content">
+                      <p class="p-notification__message">{{ message }}</p>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <!-- World Picker -->
+            <div class="p-card">
+                <h3>Current World: <span class="p-text--brand">{{ active_world }}</span></h3>
+                    <form action="/switch_world" method="POST" class="p-form p-form--inline u-no-margin--bottom" style="display: flex; align-items: center;">
+                        <select name="world_name" class="p-form__control" style="max-width: 300px;" {% if running %}disabled{% endif %}>
+                            {% for world in all_worlds %}
+                                <option value="{{ world }}" {% if world == active_world %}selected{% endif %}>{{ world }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="p-button--base" id="trigger-rename-world" {% if running %}disabled{% endif %}>Rename</button>
+                        <button type="submit" class="p-button" {% if running %}disabled{% endif %}>Switch</button>
+                        <button type="button" class="p-button--positive" id="trigger-new-world" {% if running %}disabled{% endif %}>+ New</button>
+                    </form>
+                    {% if running %}
+                        <p class="p-text--small u-no-margin--bottom is-muted" style="margin-top: 0.5rem;">Stop the server to switch or create worlds.</p>
+                    {% endif %}
+            </div>
+
+
+            <!-- Server Controls -->
+            <div class="p-card">
+                <h3>Status: 
+                    {% if running %}
+                        <span style="color: #0e8420;">Online</span>
+                    {% else %}
+                        <span style="color: #c7162b;">Offline</span>
+                    {% endif %}
+                </h3>
+                        {% if not jar_exists %}
+                            <p>No server installed. Click below to fetch the latest version.</p>
+                            <form action="/download" method="POST" style="display:inline;" id="download-form">
+                                <button type="submit" class="p-button--positive" id="download-btn">Download Latest Server</button>
+                            </form>
+                        {% else %}
+                        {% if not running %}
+                            <form action="/start" method="POST" style="display:inline;">
+                                <button class="p-button--positive">Start Server</button>
+                            </form>
+                        {% else %}
+                            <form action="/stop" method="POST" style="display:inline;">
+                                <button class="p-button--negative">Stop Server</button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+            </div>
+
+           <!-- Admin Controls -->
+            {% if running %}
+            <div class="p-card">
+                <h3>Admin Controls</h3>
+                
+                <!-- Quick Action Buttons -->
+                <div class="row u-no-margin--left">
+                    <form action="/command" method="POST" class="col-6 u-no-padding--left" style="margin-bottom: .5rem;">
+                        <input type="hidden" name="cmd" value="gamemode creative @a">
+                        <button type="submit" class="p-button" style="width: 100%;">All Creative</button>
+                    </form>
+                    <form action="/command" method="POST" class="col-6 u-no-padding--left" style="margin-bottom: .5rem;">
+                        <input type="hidden" name="cmd" value="gamemode survival @a">
+                        <button type="submit" class="p-button" style="width: 100%;">All Survival</button>
+                    </form>
+                    <form action="/command" method="POST" class="col-6 u-no-padding--left" style="margin-bottom: .5rem;">
+                        <input type="hidden" name="cmd" value="time set day">
+                        <button type="submit" class="p-button" style="width: 100%;">Make it Day</button>
+                    </form>
+                    <form action="/command" method="POST" class="col-6 u-no-padding--left" style="margin-bottom: .5rem;">
+                        <input type="hidden" name="cmd" value="weather clear">
+                        <button type="submit" class="p-button" style="width: 100%;">Clear Weather</button>
+                    </form>
+                </div>
+
+                <hr class="is-muted" />
+
+                <!-- Custom Command Input -->
+                <form action="/command" method="POST" class="p-form p-form--inline u-no-margin--bottom">
+                    <input type="text" name="cmd" class="p-form__control" placeholder="e.g. op Steve" required>
+                    <button type="submit" class="p-button--positive">Send</button>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Backup Card -->
+            <div class="p-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 class="u-no-margin--bottom">Recent Backups</h3>
+                </div>
+                    <form action="/backup" method="POST" style="display:inline;">
+                        <button class="p-button--brand u-no-margin--bottom">Backup World</button>
+                    </form>
+                {% if backups %}
+                    <ul class="p-list">
+                        {% for backup in backups %}
+                            <li class="p-list__item" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                                
+                                <span style="word-break: break-all;">{{ backup }}</span>
+                                
+                                <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+                                    <button type="button" class="p-button u-no-margin--bottom trigger-restore" data-backup="{{ backup }}">Restore</button>
+                                    <button type="button" class="p-button--negative u-no-margin--bottom trigger-delete" data-backup="{{ backup }}">Delete</button>
+                                </div>
+                                
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No backups found. Go build something first!</p>
+                {% endif %}
+            </div>
+       </div>     
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-7">
+            <div class="p-card">
+                <h3>Live Console</h3>
+                {% if running %}
+                    <!-- Expanded active state -->
+                    <div class="p-code-snippet">
+                        <pre class="p-code-snippet__block" id="console-output" style="height: 600px; overflow-y: auto; background-color: #111; color: #eee; padding: 1rem; border-radius: 4px; font-family: monospace; margin-bottom: 0;"></pre>
+                    </div>
+                {% else %}
+                    <!-- Collapsed standby state -->
+                    <div class="p-code-snippet">
+                        <pre class="p-code-snippet__block" style="height: 60px; overflow-y: hidden; background-color: #222; color: #777; padding: 1rem; border-radius: 4px; font-family: monospace; margin-bottom: 0;">[System] Server is currently offline. Awaiting startup...</pre>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+<script>
+    const consoleEl = document.getElementById('console-output');
+    
+    if (consoleEl) {
+        let autoScroll = true;
+
+        consoleEl.addEventListener('scroll', () => {
+            const isAtBottom = consoleEl.scrollHeight - consoleEl.scrollTop <= consoleEl.clientHeight + 10;
+            autoScroll = isAtBottom;
+        });
+
+        setInterval(() => {
+            fetch('/log')
+                .then(response => response.text())
+                .then(text => {
+                    if (text) {
+                        consoleEl.textContent = text;
+                        if (autoScroll) {
+                            consoleEl.scrollTop = consoleEl.scrollHeight;
+                        }
+                    }
+                });
+        }, 2000);
+    }
+</script>
+
+<!-- Restore Modal -->
+<div class="p-modal" id="restore-modal" style="display: none;">
+  <div class="p-modal__dialog" role="dialog" aria-labelledby="modal-title">
+    <header class="p-modal__header">
+      <h2 class="p-modal__title" id="modal-title">Confirm Restore</h2>
+      <button class="p-modal__close" aria-label="Close active modal" id="close-modal-x">Close</button>
+    </header>
+    <div class="p-modal__content">
+      <p>Are you sure you want to restore <strong id="modal-backup-name"></strong>?</p>
+      <p class="p-text--small">This will shut down the server, overwrite the current world, and cannot be undone.</p>
+    </div>
+    <footer class="p-modal__footer">
+      <button class="p-button--base u-no-margin--bottom" id="cancel-modal">Cancel</button>
+      <form id="restore-form" method="POST" style="display:inline; margin-left: .5rem;">
+          <button type="submit" class="p-button--negative u-no-margin--bottom">Yes, Restore World</button>
+      </form>
+    </footer>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="p-modal" id="delete-modal" style="display: none;">
+  <div class="p-modal__dialog" role="dialog" aria-labelledby="delete-modal-title">
+    <header class="p-modal__header">
+      <h2 class="p-modal__title" id="delete-modal-title">Confirm Deletion</h2>
+      <button class="p-modal__close" aria-label="Close active modal" id="close-delete-modal-x">Close</button>
+    </header>
+    <div class="p-modal__content">
+      <p>Are you sure you want to permanently delete <strong id="delete-modal-backup-name"></strong>?</p>
+      <p class="p-text--small">This action cannot be undone.</p>
+    </div>
+    <footer class="p-modal__footer">
+      <button class="p-button--base u-no-margin--bottom" id="cancel-delete-modal">Cancel</button>
+      <form id="delete-form" method="POST" style="display:inline; margin-left: .5rem;">
+          <button type="submit" class="p-button--negative u-no-margin--bottom">Yes, Delete</button>
+      </form>
+    </footer>
+  </div>
+</div>
+
+<!-- New World Modal -->
+<div class="p-modal" id="new-world-modal" style="display: none;">
+  <div class="p-modal__dialog" role="dialog" aria-labelledby="new-world-title">
+    <header class="p-modal__header">
+      <h2 class="p-modal__title" id="new-world-title">Create New World</h2>
+      <button class="p-modal__close" aria-label="Close active modal" id="close-new-world-x">Close</button>
+    </header>
+    <div class="p-modal__content">
+      <form id="new-world-form" action="/switch_world" method="POST">
+          <label for="world_name">World Name:</label>
+          <input type="text" name="world_name" id="world_name" class="p-form__control" placeholder="e.g. Mikes_Survival" required>
+          <p class="p-text--small is-muted">Use only letters, numbers, dashes, or underscores.</p>
+      </form>
+    </div>
+    <footer class="p-modal__footer">
+      <button class="p-button--base u-no-margin--bottom" id="cancel-new-world">Cancel</button>
+      <button type="submit" form="new-world-form" class="p-button--brand u-no-margin--bottom" style="margin-left: .5rem;">Create & Switch</button>
+    </footer>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div class="p-modal" id="rename-world-modal" style="display: none;">
+  <div class="p-modal__dialog" role="dialog" aria-labelledby="rename-world-title">
+    <header class="p-modal__header">
+      <h2 class="p-modal__title" id="rename-world-title">Rename World</h2>
+      <button class="p-modal__close" aria-label="Close active modal" id="close-rename-world-x">Close</button>
+    </header>
+    <div class="p-modal__content">
+      <form id="rename-world-form" action="/rename_world" method="POST">
+          <label for="new_world_name">New Name for <strong class="p-text--brand">{{ active_world }}</strong>:</label>
+          <input type="text" name="new_world_name" id="new_world_name" class="p-form__control" value="{{ active_world }}" required>
+          <p class="p-text--small is-muted">Use only letters, numbers, dashes, or underscores.</p>
+      </form>
+    </div>
+    <footer class="p-modal__footer">
+      <button class="p-button--base u-no-margin--bottom" id="cancel-rename-world">Cancel</button>
+      <button type="submit" form="rename-world-form" class="p-button--brand u-no-margin--bottom" style="margin-left: .5rem;">Save Name</button>
+    </footer>
+  </div>
+</div>
+
+<!-- Modal Logic Script -->
+<script>
+    const modal = document.getElementById('restore-modal');
+    const restoreForm = document.getElementById('restore-form');
+    const backupNameLabel = document.getElementById('modal-backup-name');
+    
+    // Restore buttons wiring
+    document.querySelectorAll('.trigger-restore').forEach(button => {
+        button.addEventListener('click', () => {
+            const backupFile = button.getAttribute('data-backup');
+            backupNameLabel.textContent = backupFile;
+            // Dynamically set the form's POST destination to include the filename
+            restoreForm.action = `/restore/${backupFile}`;
+            modal.style.display = 'flex'; // Vanilla Framework uses flex for modals
+        });
+    });
+
+    // Close Modal wiring
+    const closeModal = () => modal.style.display = 'none';
+    document.getElementById('cancel-modal').addEventListener('click', closeModal);
+    document.getElementById('close-modal-x').addEventListener('click', closeModal);
+    
+    // Delete Modal Logic 
+    const deleteModal = document.getElementById('delete-modal');
+    const deleteForm = document.getElementById('delete-form');
+    const deleteBackupNameLabel = document.getElementById('delete-modal-backup-name');
+    
+    // Delete button wiring
+    document.querySelectorAll('.trigger-delete').forEach(button => {
+        button.addEventListener('click', () => {
+            const backupFile = button.getAttribute('data-backup');
+            deleteBackupNameLabel.textContent = backupFile;
+            // Dynamically set the form's POST destination
+            deleteForm.action = `/delete_backup/${backupFile}`;
+            deleteModal.style.display = 'flex'; 
+        });
+    });
+
+    // Close Delete Modal wiring
+    const closeDeleteModal = () => deleteModal.style.display = 'none';
+    document.getElementById('cancel-delete-modal').addEventListener('click', closeDeleteModal);
+    document.getElementById('close-delete-modal-x').addEventListener('click', closeDeleteModal);
+    
+    // New World Modal Logic
+    const newWorldModal = document.getElementById('new-world-modal');
+    const triggerNewWorld = document.getElementById('trigger-new-world');
+    
+    if (triggerNewWorld) {
+        triggerNewWorld.addEventListener('click', () => {
+            newWorldModal.style.display = 'flex';
+        });
+    }
+
+    const closeNewWorldModal = () => newWorldModal.style.display = 'none';
+    document.getElementById('cancel-new-world').addEventListener('click', closeNewWorldModal);
+    document.getElementById('close-new-world-x').addEventListener('click', closeNewWorldModal);
+    
+    // Rename World Modal Logic
+    const renameWorldModal = document.getElementById('rename-world-modal');
+    const triggerRenameWorld = document.getElementById('trigger-rename-world');
+    
+    if (triggerRenameWorld) {
+        triggerRenameWorld.addEventListener('click', () => {
+            renameWorldModal.style.display = 'flex';
+        });
+    }
+
+    const closeRenameWorldModal = () => renameWorldModal.style.display = 'none';
+    document.getElementById('cancel-rename-world').addEventListener('click', closeRenameWorldModal);
+    document.getElementById('close-rename-world-x').addEventListener('click', closeRenameWorldModal);
+</script>
+
+<script>
+    const downloadForm = document.getElementById('download-form');
+    const downloadBtn = document.getElementById('download-btn');
+
+    if (downloadForm && downloadBtn) {
+        downloadForm.addEventListener('submit', function() {
+            const currentWidth = downloadBtn.offsetWidth;
+            downloadBtn.style.width = `${currentWidth}px`;
+            downloadBtn.classList.add('is-processing');
+            downloadBtn.disabled = true;
+            downloadBtn.innerHTML = '<i class="p-icon--spinner u-animation--spin"></i> Fetching...';
+        });
+    }
+</script>
+
+{% endblock %}

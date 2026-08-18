@@ -1,0 +1,34 @@
+name: greystone
+base: core24
+version: '1.0'
+summary: Beginner friendly Minecraft Server manager
+description: |
+  A beginner friendly web interface to manage, backup, and
+  run a Minecraft Java server. The users yearn for the mines!
+
+grade: devel
+confinement: strict
+
+apps:
+  greystone:
+    command: bin/python3 $SNAP/app.py
+    daemon: simple
+    restart-condition: always
+    plugs:
+      - network        
+      - network-bind   
+    environment:
+      PYTHONUNBUFFERED: "1"
+
+parts:
+  greystone-app:
+    plugin: dump
+    source: .
+    
+  greystone-env:
+    plugin: python
+    source: .
+    python-packages:
+      - flask
+    stage-packages:
+      - openjdk-25-jre-headless

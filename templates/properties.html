@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-strip is-shallow">
+    <div class="row">
+        <div class="col-12">
+            <h1>Server Properties</h1>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="p-notification--{{ category }}">
+                    <div class="p-notification__content">
+                      <p class="p-notification__message">{{ message }}</p>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <hr />
+
+            {% if props %}
+                <form action="/save_properties" method="POST">
+                    <div class="row">
+                        {% for key, value in props.items() %}
+                        <div class="col-4" style="margin-bottom: 1rem;">
+                            <label for="{{ key }}">{{ key }}</label>
+                            <input type="text" id="{{ key }}" name="{{ key }}" value="{{ value }}" class="p-form__control">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="row" style="margin-top: 2rem;">
+                        <div class="col-12">
+                            <button type="submit" class="p-button--positive">Save Configuration</button>
+                            <a href="/" class="p-button--base">Cancel</a>
+                        </div>
+                    </div>
+                </form>
+            {% else %}
+                <div class="p-empty-state">
+                    <div class="p-empty-state__content">
+                        <h3>No Properties File Found</h3>
+                        <p>The server must be started at least once to generate the default configuration file.</p>
+                        <a href="/" class="p-button--brand">Return to Dashboard</a>
+                    </div>
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}
