@@ -20,6 +20,12 @@ apps:
     environment:
       PYTHONUNBUFFERED: "1"
 
+  launcher:
+    command: usr/bin/xdg-open http://localhost:8080
+    desktop: snap/gui/launcher.desktop
+    plugs:
+      - desktop
+
 parts:
   greystone-app:
     plugin: dump
@@ -32,3 +38,4 @@ parts:
       - flask
     stage-packages:
       - openjdk-25-jre-headless
+      - xdg-utils
