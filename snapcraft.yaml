@@ -34,8 +34,19 @@ parts:
   greystone-env:
     plugin: python
     source: .
+    build-packages:
+      - ca-certificates-java
+      - default-jre-headless
     python-packages:
       - flask
     stage-packages:
       - openjdk-25-jre-headless
       - xdg-utils
+    override-prime: |
+      craftctl default
+      for cacert in $CRAFT_PRIME/usr/lib/jvm/java-*-openjdk-*/lib/security/cacerts; do
+        if [ -L "$cacert" ]; then
+          rm "$cacert"
+          cp /etc/ssl/certs/java/cacerts "$cacert"
+        fi
+      done
