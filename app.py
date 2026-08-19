@@ -255,7 +255,7 @@ def restore(backup_filename):
             shutil.rmtree(paths["world"])
             
         shutil.unpack_archive(backup_path, paths["world"], 'zip')
-        
+        ram_val = get_ram_allocation()
         log_handle = open(paths["log"], 'w')
         mc_process = subprocess.Popen(
             [get_java_path(), f"-Xmx{ram_val}G", f"-Xms{ram_val}G", "-jar", SERVER_JAR, "nogui"],
