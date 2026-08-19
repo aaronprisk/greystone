@@ -5,7 +5,13 @@
     <div class="row">
         <div class="col-12">
             <h1>Server Properties</h1>
-            
+            <!-- Active Instance Indicator -->
+            <div class="p-card u-no-padding--bottom u-no-padding--top" style="margin-bottom: 2rem; background-color: rgba(0, 0, 0, 0.02); border-left: 4px solid #E95420;">
+                <div class="p-card__inner">
+                    <h3>Configuring World: <span class="p-text--brand">{{ active_world }}</span></h3>
+                    <p class="p-text--small is-muted u-no-max-width">Changes saved here will only apply to this specific instance. Updated settings will be applied on next Minecraft Server start/restart</p>
+                </div>
+            </div>
             {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
                 {% for category, message in messages %}
@@ -20,6 +26,24 @@
 
             <hr />
 
+            <!-- Greystone Hardware Settings -->
+            <div class="row">
+              <form action="/save_hardware" method="POST">
+                    <h4 class="u-no-margin--bottom">Hardware Allocation</h4>
+                    <p class="p-text--small is-muted">Settings specific to the host machine.</p>
+                    <label for="server_ram">Server Memory (GB)</label>
+                    <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                      <input type="number" id="server_ram" name="server_ram" class="p-form__control u-no-margin--bottom" value="{{ current_ram }}" min="1" max="32" style="max-width: 150px;">
+                      <button type="submit" class="p-button--positive u-no-margin--bottom">Apply</button>
+                    </div>
+                    <p class="p-form__help p-text--small u-no-max-width">
+                        <strong>Warning:</strong> Setting this value higher than your system's available RAM may cause the host machine to crash!
+                    </p>
+               </form>
+             </div">
+            <hr />
+            <h4 class="u-no-margin--bottom">Server Configuration</h4>
+            <p class="p-text--small is-muted">Additional settings for Minecraft server.</p>
             {% if props %}
                 <form action="/save_properties" method="POST">
                     <div class="row">

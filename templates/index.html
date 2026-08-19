@@ -56,6 +56,11 @@
                             <form action="/download" method="POST" style="display:inline;" id="download-form">
                                 <button type="submit" class="p-button--positive" id="download-btn">Download Latest Server</button>
                             </form>
+                            <!-- EULA bit so the Mojang lawyers dont throw you into the real mines -->
+                            <p class="p-text--small is-muted" style="margin-top: 0.5rem; margin-bottom: 0;">
+                                By downloading, you agree to the 
+                                <a href="https://aka.ms/MinecraftEULA" target="_blank">Minecraft EULA</a>.
+                            </p>
                         {% else %}
                         {% if not running %}
                             <form action="/start" method="POST" style="display:inline;">
