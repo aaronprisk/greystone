@@ -58,6 +58,7 @@ def get_paths():
         "backups": os.path.join(base, "backups"),
         "log": os.path.join(base, "server.log"),
         "properties": os.path.join(base, "server.properties"),
+        "ram": os.path.join(base, "ram.txt"),
         "eula": os.path.join(base, "eula.txt"),
         "name": active
     }
@@ -80,6 +81,13 @@ def get_java_path():
         if matches:
             return matches[0]
     return "java"
+
+def get_ram_allocation():
+    paths = get_paths()
+    if os.path.exists(paths["ram"]):
+        with open(paths["ram"], 'r') as f:
+            return f.read().strip()
+    return "2"
 
 # --- ROUTES ---
 @app.route("/")
@@ -172,9 +180,10 @@ def start():
         with open(paths["eula"], "w") as f:
             f.write("eula=true\n")
         
+        ram_val = get_ram_allocation()
         log_handle = open(paths["log"], 'w')
         mc_process = subprocess.Popen(
-            [get_java_path(), "-Xmx2G", "-Xms2G", "-jar", SERVER_JAR, "nogui"],
+            [get_java_path(), f"-Xmx{ram_val}G", f"-Xms{ram_val}G", "-jar", SERVER_JAR, "nogui"],
             cwd=paths["cwd"],
             stdin=subprocess.PIPE,
             stdout=log_handle,
@@ -249,7 +258,7 @@ def restore(backup_filename):
         
         log_handle = open(paths["log"], 'w')
         mc_process = subprocess.Popen(
-            [get_java_path(), "-Xmx2G", "-Xms2G", "-jar", SERVER_JAR, "nogui"],
+            [get_java_path(), f"-Xmx{ram_val}G", f"-Xms{ram_val}G", "-jar", SERVER_JAR, "nogui"],
             cwd=paths["cwd"],
             stdin=subprocess.PIPE,
             stdout=log_handle,
@@ -279,6 +288,7 @@ def command():
 def properties():
     paths = get_paths()
     props = {}
+    ram_val = get_ram_allocation()
     if os.path.exists(paths["properties"]):
         with open(paths["properties"], 'r') as f:
             for line in f:
@@ -289,7 +299,7 @@ def properties():
     else:
         flash("server.properties not found for this world yet. Start it once to generate.", "information")
         
-    return render_template("properties.html", props=props, active_world=paths["name"])
+    return render_template("properties.html", props=props, active_world=paths["name"], current_ram=ram_val)
 
 @app.route("/save_properties", methods=["POST"])
 def save_properties():
@@ -304,7 +314,7 @@ def save_properties():
                 if line and not line.startswith('#') and '=' in line:
                     key, val = line.split('=', 1)
                     props[key] = val
-                    
+        
     # Update with new stuff
     for key in request.form:
         props[key] = request.form[key]
@@ -316,6 +326,17 @@ def save_properties():
             f.write(f"{key}={val}\n")
             
     flash("Server properties updated! Restart the server to apply changes.", "positive")
+    return redirect("/properties")
+    
+@app.route("/save_hardware", methods=["POST"])
+def save_hardware():
+    paths = get_paths()
+    ram_val = request.form.get("server_ram", "2")
+    
+    with open(paths["ram"], 'w') as f:
+        f.write(ram_val)
+        
+    flash("Hardware settings updated! Restart the server to apply changes.", "positive")
     return redirect("/properties")
 
 if __name__ == "__main__":

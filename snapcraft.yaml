@@ -1,12 +1,12 @@
 name: greystone
 base: core24
-version: '1.0'
+version: '1.0.1'
 summary: Beginner friendly Minecraft Server manager
 description: |
   A beginner friendly web interface to manage, backup, and
   run a Minecraft Java server. The users yearn for the mines!
 
-grade: devel
+grade: stable
 confinement: strict
 
 apps:
