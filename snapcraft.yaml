@@ -1,6 +1,6 @@
 name: greystone
 base: core24
-version: '1.0.1'
+version: '1.0.2'
 summary: Beginner friendly Minecraft Server manager
 description: |
   A beginner friendly web interface to manage, backup, and
@@ -30,6 +30,10 @@ parts:
   greystone-app:
     plugin: dump
     source: .
+    prime:
+      - "-mc_data"
+      - "-*.snap"
+      - "-__pycache__"
     
   greystone-env:
     plugin: python
