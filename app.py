@@ -157,6 +157,37 @@ def rename_world():
         
     return redirect("/")
 
+@app.route("/delete_world", methods=["POST"])
+def delete_world():
+    global mc_process
+    
+    # Make sure server is stopped
+    if mc_process is not None and mc_process.poll() is None:
+        flash("Cannot delete a world while the server is running!", "negative")
+        return redirect("/")
+        
+    all_worlds = get_all_worlds()
+    
+    # Prevent deleting the last world
+    if len(all_worlds) <= 1:
+        flash("Cannot delete your only world. Create a new one first!", "negative")
+        return redirect("/")
+        
+    paths = get_paths()
+    world_to_delete = paths["name"]
+    
+    # Destroy the instance folder
+    if os.path.exists(paths["cwd"]):
+        shutil.rmtree(paths["cwd"])
+        
+    # Reassign the active world
+    remaining_worlds = get_all_worlds()
+    if remaining_worlds:
+        set_active_world(remaining_worlds[0])
+        
+    flash(f"World '{world_to_delete}' has been permanently deleted.", "positive")
+    return redirect("/")
+
 @app.route("/download", methods=["POST"])
 def download():
     try:
